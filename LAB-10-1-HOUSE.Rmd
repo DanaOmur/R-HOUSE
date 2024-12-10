@@ -1,0 +1,142 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+```{r}
+#install.packages("Amelia")
+library (tidyverse)
+library (Amelia)
+library(dplyr)
+library(pROC)
+library(caret)
+```
+
+```{r}
+train_encoded <- read.csv('train_encoded.csv')
+test_encoded <- read.csv('test_encoded.csv')
+```
+```{r}
+missmap(train_encoded, col = c('red', 'green'))
+```
+```{r}
+missmap(test_encoded, col = c('red', 'green'))
+```
+```{r}
+train_encoded$poschange <- train_encoded$saleEstimate_valueChange.numericChange>0
+test_encoded$poschange <- test_encoded$saleEstimate_valueChange.numericChange>0
+```
+```{r}
+table(train_encoded$tenureLeasehold)
+```
+```{r}
+glimpse(train_encoded)
+```
+
+```{r}
+train_encoded <- train_encoded %>% select(-history_date, -saleEstimate_ingestedAt, saleEstimate_valueChange.saleDate)
+test_encoded <- test_encoded %>% select(-history_date, -saleEstimate_ingestedAt, saleEstimate_valueChange.saleDate)
+```
+```{r}
+train_encoded <- train_encoded %>% select(where(is.numeric))
+test_encoded <- test_encoded %>% select(where(is.numeric))
+```
+
+
+```{r}
+model <- glm(tenureLeasehold ~ ., family = binomial(), data = train_encoded)
+```
+```{r}
+summary(model)
+```
+
+```{r}
+#no way it is getting any better with generating other bool vars. All coefs have p>0.95.
+```
+```{r}
+exp(coef(model))
+```
+```{r}
+predictions <- predict(model, newdata = test_encoded)
+
+# View first few predictions (probabilities of Outcome = 1)
+head(predictions)
+```
+```{r}
+# Convert probabilities to binary predictions (0 or 1)
+predicted_class <- ifelse(predictions > 0.5, 1, 0)
+
+# View first few predicted classes
+head(predicted_class)
+```
+```{r}
+# Calculate accuracy
+accuracy <- mean(predicted_class == test_encoded$tenureLeasehold)
+accuracy
+```
+```{r}
+# Confusion matrix
+table(Predicted = predicted_class, Actual = test_encoded$tenureLeasehold)
+```
+```{r}
+Accuracy = (22540+32767)/(22540+32767)
+Accuracy
+```
+```{r}
+Precision = 22540/(22540)
+Precision
+```
+```{r}
+Recall=22540/22540
+Recall
+```
+```{r}
+F1_Score = 2*Precision*Recall/(Precision+Recall)
+F1_Score
+```
+```{r}
+roc_curve <- roc(test_encoded$tenureLeasehold, predictions)
+```
+```{r}
+plot(roc_curve)
+```
+
+```{r}
+train_test <- rbind(train_encoded, test_encoded)
+train_test
+```
+
+```{r}
+# Perform 10-fold cross-validation for logistic regression
+train_control <- trainControl(method = "cv", number = 10)
+cv_model <- train(as.factor(tenureLeasehold) ~ ., data = train_test, method = "glm", family = "binomial", trControl = train_control)
+
+# View cross-validation results
+print(cv_model)
+```
+```{r}
+cv_results <- cv_model$results
+print(cv_results)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

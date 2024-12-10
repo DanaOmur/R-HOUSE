@@ -1,0 +1,198 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+# List of packages
+packages <- c("tidyverse", "readxl", "tidyr", "dplyr", "ggplot2", "missRanger", 'reshape2')
+
+# Function to check and install missing packages
+install_if_missing <- function(packages) {
+  for (package in packages) {
+    if (!require(package, character.only = TRUE)) {
+      install.packages(package, dependencies = TRUE)
+      library(package, character.only = TRUE)
+    }
+  }
+}
+
+# Install and load packages
+install_if_missing(packages)
+
+
+```
+```{r}
+# Load libraries
+library(tidyverse)  
+library(readxl)      
+library(tidyr)       
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(missRanger)
+library(reshape2)
+```
+```{r}
+path <- file.choose()
+
+data <- read.csv(path)
+```
+```{r}
+#deselect everything that is nonsense for studying
+data <- data %>%
+  select(-fullAddress, -postcode, -country, -outcode)
+#there are lots of columns that are not so necessary, but they can make sense. For ex: country contained only 1 unique val.
+```
+```{r}
+names(data)
+```
+```{r}
+#will filter by NA values, as columns are 24 in number, getting rid of few of them is not a big deal.
+calculate_and_print_na_percentage <- function(data) {
+  # Calculate the percentage of NA values for each column
+  na_percentage <- sapply(data, function(col) {
+    sum(is.na(col)) / length(col) * 100
+  })
+  
+  # Print the percentage of NA values for each column
+  for (col_name in names(na_percentage)) {
+    cat(sprintf("Column '%s' has %.2f%% NA values\n", col_name, na_percentage[col_name]))
+  }
+}
+
+# Example usage
+calculate_and_print_na_percentage(data)
+
+```
+```{r}
+data <- data %>%
+  select(-history_numericChange, -history_percentageChange)
+```
+```{r}
+# Identify numeric columns
+numeric_cols <- sapply(data, is.numeric)
+numeric_data <- data[, numeric_cols]
+```
+```{r}
+# Apply different methods to handle missing values
+# Method 1: Remove NA
+data_remove <- na.omit(numeric_data)
+```
+```{r}
+# Method 2: Replace NA with median
+# Create a copy of numeric_data to hold the median-filled data
+data_median <- numeric_data
+
+# Replace NA values with median of each column
+data_median <- data.frame(lapply(data_median, function(col) {
+  if (is.numeric(col)) {
+    col[is.na(col)] <- median(col, na.rm = TRUE)
+  }
+  return(col)
+}))
+
+```
+```{r}
+# Method 3: Replace NA with mode
+mode_val <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+data_mode <- numeric_data
+data_mode <- as.data.frame(lapply(data_mode, function(x) ifelse(is.na(x), mode_val(na.omit(x)), x)))
+```
+```{r}
+# Method 4: Replace NA with mean
+data_mean <- numeric_data
+data_mean <- as.data.frame(lapply(data_mean, function(x) ifelse(is.na(x), mean(x, na.rm = TRUE), x)))
+
+```
+```{r}
+#Method 5: Apply missRanger
+imputed_data <- missRanger(numeric_data, num.trees = 100)
+```
+
+```{r}
+# Create a comparison data frame
+methods <- c('nothing done',"remove", "median", "mode", "mean", "missRanger")
+results <- list(numeric_data,data_remove, data_median, data_mode, data_mean, imputed_data)
+
+# Combine results into a single data frame
+comparison_data <- do.call(rbind, lapply(methods, function(method) {
+  result <- results[[which(methods == method)]]
+  result$Method <- method
+  result
+}))
+```
+```{r}
+# Melt the data for ggplot2
+comparison_data_melted <- melt(comparison_data, id.vars = "Method")
+rm(numeric_data)
+rm(data_mean)
+rm(data_median)
+rm(results)
+rm(data_mode)
+rm(data_remove)
+rm(comparison_data)
+```
+```{r}
+# Assuming your dataset is called 'comparison_data_melted'
+unique_variables <- unique(comparison_data_melted$variable)
+
+# Create and save plots for each variable
+for (variable in unique_variables) {
+  p <- comparison_data_melted %>%
+    filter(variable == !!variable) %>%
+    ggplot(aes(x = Method, y = value, fill = Method)) +
+    geom_boxplot() +
+    ggtitle(paste("Comparison of Missing Value Imputation Methods for", variable)) +
+    xlab("Method") +
+    ylab("Value") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  print(p)
+  # Save the plot
+  ggsave(paste0("comparison_plot_", variable, ".png"), plot = p, width = 10, height = 6)
+}
+
+
+```
+
+```{r}
+#missRanger was chosen
+# Ensure that the names of columns in the imputed_data match those in the original_data
+common_columns <- intersect(names(imputed_data), names(data))
+
+# Replace the columns in original_data with those from imputed_data
+data[common_columns] <- imputed_data[common_columns]
+sum(is.na(data))
+
+```
+```{r}
+# Example usage
+calculate_and_print_na_percentage(data)
+```
+```{r}
+getwd()
+# Save the imputed dataset as a CSV file
+write.csv(data, file = "imputed_HOUSE.csv", row.names = FALSE)
+```
+
+
+
+
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

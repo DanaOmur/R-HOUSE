@@ -1,0 +1,139 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+```{r}
+path <- file.choose()
+
+data <- read.csv(path)
+rm(path)
+```
+```{r}
+unique(data$tenure)
+```
+```{r}
+empty_string_count <- data %>% filter(tenure == "") %>% tally() 
+print(empty_string_count)
+```
+```{r}
+cleaned_data <- data %>%
+  filter(tenure != "")
+```
+```{r}
+unique(cleaned_data$tenure)
+```
+```{r}
+cleaned_data <- cleaned_data%>% select(-currentEnergyRating)
+```
+```{r}
+unique(cleaned_data$propertyType)
+```
+```{r}
+empty_string_count <- cleaned_data %>% filter(propertyType == "") %>% tally() 
+print(empty_string_count)
+```
+```{r}
+cleaned_data <- cleaned_data %>%
+  filter(propertyType != "")
+```
+```{r}
+#got rid of just empty values. Now boxplots:
+# Create a boxplot for rentEstimate_currentPrice
+p1 <- ggplot(cleaned_data, aes(x = tenure, y = rentEstimate_currentPrice, fill = tenure)) +
+  geom_boxplot() +
+  ggtitle("Boxplot of Rent Estimate Current Price by Tenure") +
+  xlab("Tenure") +
+  ylab("Rent Estimate Current Price") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Print the boxplot
+print(p1)
+
+# Create a boxplot for saleEstimate_currentPrice
+p2 <- ggplot(cleaned_data, aes(x = tenure, y = saleEstimate_currentPrice, fill = tenure)) +
+  geom_boxplot() +
+  ggtitle("Boxplot of Sale Estimate Current Price by Tenure") +
+  xlab("Tenure") +
+  ylab("Sale Estimate Current Price") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Print the boxplot
+print(p2)
+
+```
+```{r}
+cap_outliers_by_group <- function(data, group_column) {
+  # Use dplyr's group_by and mutate to handle outliers within each group
+  capped_data <- data %>%
+    group_by(!!sym(group_column)) %>%
+    mutate(across(where(is.numeric), ~ {
+      Q1 <- quantile(., 0.25, na.rm = TRUE)
+      Q3 <- quantile(., 0.75, na.rm = TRUE)
+      IQR <- Q3 - Q1
+      lower_bound <- Q1 - 1.5 * IQR
+      upper_bound <- Q3 + 1.5 * IQR
+      .[. < lower_bound] <- lower_bound
+      .[. > upper_bound] <- upper_bound
+      return(.)
+    }, .names = "{.col}_capped")) %>%
+    ungroup()
+  
+  return(capped_data)
+}
+
+# Example usage
+cleaned_data <- cap_outliers_by_group(cleaned_data, "tenure")
+
+```
+```{r}
+p3 <- ggplot(cleaned_data, aes(x = tenure, y = rentEstimate_currentPrice_capped, fill = tenure)) +
+  geom_boxplot() +
+  ggtitle("Boxplot of Rent Estimate Current Price by Tenure") +
+  xlab("Tenure") +
+  ylab("Rent Estimate Current Price") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Print the boxplot
+print(p3)
+
+# Create a boxplot for saleEstimate_currentPrice
+p4 <- ggplot(cleaned_data, aes(x = tenure, y = saleEstimate_currentPrice_capped, fill = tenure)) +
+  geom_boxplot() +
+  ggtitle("Boxplot of Sale Estimate Current Price by Tenure") +
+  xlab("Tenure") +
+  ylab("Sale Estimate Current Price") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Print the boxplot
+print(p4)
+```
+```{r}
+getwd()
+# Save the dataset as a CSV file
+write.csv(cleaned_data, file = "8-2-HOUSE.csv", row.names = FALSE)
+```
+
+
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

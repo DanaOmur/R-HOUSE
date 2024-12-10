@@ -1,0 +1,208 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+# Generate 100 random numbers from a Poisson distribution with lambda = 8
+random_numbers <- rpois(100, lambda = 8)
+
+# Display the first few random numbers
+head(random_numbers)
+```
+
+```{r}
+# Define the rate parameter (lambda)
+lambda <- 8
+
+# Calculate the probability mass function (PMF)
+y <- dpois(random_numbers, lambda = lambda)
+
+# Create the plot
+barplot(y, names.arg = random_numbers, col = "lightblue", main = "Poisson Distribution (lambda = 8)",
+        xlab = "Number of Events", ylab = "Probability")
+
+```
+```{r}
+# Calculate the probability of observing exactly 4 events
+prob_4_events <- dpois(4, lambda = 8)
+cat("P(X = 4):", prob_4_events, "\n")
+```
+```{r}
+# Calculate cumulative probability for 4 or fewer events
+cumulative_prob_4 <- ppois(4, lambda = 8)
+cat("P(X ≤ 4):", cumulative_prob_4, "\n")
+```
+
+
+```{r}
+# Calculate the quantile corresponding to cumulative probability 0.95
+quantile_value <- qpois(0.95, lambda = 8)
+cat("The number of events at the 95th percentile:", quantile_value, "\n")
+```
+
+
+```{r}
+# Create a fictional dataset
+city <- c("City A", "City A", "City A", "City B", "City B", "City B")
+transport_mode <- c("Car", "Public Transit", "Bicycle", "Car", "Public Transit", 
+                    "Bicycle")
+observed <- c(40, 30, 20, 35, 25, 15)  # Observed frequencies
+expected <- c(35, 30, 20, 40, 25, 15)  # Expected frequencies
+```
+
+
+```{r}
+# Calculate Chi-Square statistic manually
+chi_sq_statistic <- sum((observed - expected)^2 / expected)
+df <- length(observed) - 1
+p_value <- 1 - pchisq(chi_sq_statistic, df)
+```
+
+
+```{r}
+# Print results
+print(paste("Chi-Square Statistic:", chi_sq_statistic))
+
+print(paste("Degrees of Freedom:", df))
+
+print(paste("P-value:", p_value))
+```
+
+
+```{r}
+#install packages
+#install.packages("dplyr")
+library(dplyr)
+library(ggplot2)
+# Create a data frame for plotting
+data_plot <- data.frame(Transportation_Mode = transport_mode,
+                        Observed = observed,
+                        Expected = expected)
+
+# Calculate deviations between observed and expected frequencies
+data_plot <- data_plot %>%
+  mutate(deviation = Observed - Expected)
+
+# Plot observed and expected frequencies with deviations
+ggplot(data_plot, aes(x = Transportation_Mode, y = Observed, fill = "Observed")) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.5) +
+  geom_bar(aes(y = Expected, fill = "Expected"), stat = "identity", position = "dodge", 
+           width = 0.5, alpha = 0.5) +
+  geom_errorbar(aes(ymin = pmin(Observed, Expected), ymax = pmax(Observed, Expected), 
+                    color = "Deviation"), 
+                width = 0.2, position = position_dodge(width = 0.5)) +
+  labs(title = "Observed vs. Expected Frequencies of Transportation Modes",
+       y = "Frequency",
+       fill = "") +
+  scale_fill_manual(values = c("Observed" = "blue", "Expected" = "green"),
+                    name = "Category") +
+  scale_color_manual(values = "red",
+                     name = "Deviation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+df <- read.csv('test_for_ct.csv')
+```
+
+
+```{r}
+# Create a contingency table
+cont_table <- table(df$predictions, df$tenureLeasehold)
+
+# Perform Chi-Square test
+chi_sq_result <- chisq.test(cont_table)
+
+# Print the results
+print(chi_sq_result)
+```
+
+
+```{r}
+# Extract observed and expected frequencies from the contingency table
+observed <- as.vector(cont_table)
+expected <- chi_sq_result$expected
+
+# Create a data frame for plotting
+plot_data <- data.frame(
+  Category = rep(rownames(cont_table), 2),
+  Frequency = c(observed, expected),
+  Type = rep(c("Observed", "Expected"), each = nrow(cont_table))
+)
+
+# Plot the frequencies
+library(ggplot2)
+
+ggplot(plot_data, aes(x = Category, y = Frequency, fill = Type)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9), width = 0.7) +
+  labs(title = "Observed vs. Expected Frequencies",
+       y = "Frequency",
+       fill = "Type") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+plot_data
+```
+
+
+```{r}
+observed_frequency <- filter(plot_data, Type == "Observed")[,2]
+expected_frequency <- filter(plot_data, Type == "Expected")[,2]
+```
+
+
+```{r}
+observed_frequency <- observed_frequency/sum(observed_frequency)
+expected_frequency <- expected_frequency/sum(expected_frequency)
+```
+
+
+```{r}
+#install.packages('pwr')
+library(pwr)
+ES.w1(expected_frequency, observed_frequency)
+```
+
+
+
+```{r}
+pwr.chisq.test(w=ES.w1(expected_frequency, observed_frequency), N=100, df=(12-1), sig.level=0.05)
+```
+```{r}
+# Calculate effect size
+effect_size <- tryCatch({
+  ES.w1(expected_frequency, observed_frequency)
+}, error = function(e) {
+  print("Error in effect size calculation:")
+  print(e)
+  return(NA)
+})
+
+print(paste("Effect Size:", effect_size))
+
+# Perform power analysis
+power_analysis <- tryCatch({
+  pwr.chisq.test(w = effect_size, df = (length(expected_frequency) - 1), power = 0.8, sig.level = 0.05)
+}, error = function(e) {
+  print("Error in power analysis:")
+  print(e)
+  return(NULL)
+})
+
+# Print power analysis results
+print(power_analysis)
+
+```
+
+
+
+
+```{r}
+plot(power_analysis)
+```

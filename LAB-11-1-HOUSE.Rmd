@@ -1,0 +1,76 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+df <- read.csv('8-2-HOUSE.csv')
+```
+```{r}
+price <- df$saleEstimate_currentPrice
+```
+```{r}
+head(price)
+```
+```{r}
+price_mean <- mean(price)
+price_sd <- sd(price)
+print(paste("Mean:", price_mean))
+```
+```{r}
+print(paste("Standard Deviation:", price_sd))
+```
+```{r}
+# Plot the PDF of a normal distribution
+y <- dnorm(price, mean = price_mean, sd = price_sd)
+# Create the plot
+plot(price, y, type = "p", main = "Normal Distribution", xlab = "x", ylab = "Density")
+```
+```{r}
+# Calculate the probability density at x = 0 for a normal distribution mean = rating_mean and sd = rating_sd
+density_at_0 <- dnorm(0, mean = price_mean, sd = price_sd)
+print(density_at_0) 
+```
+```{r}
+# Calculate the cumulative probability for x = 1 for a normal distribution with mean = rating_mean and sd = rating_sd
+cumulative_prob <- pnorm(1, mean = price_mean, sd = price_sd)
+print(cumulative_prob)
+
+```
+```{r}
+# Find the x value where the cumulative probability is 0.95
+quantile_value <- qnorm(0.95, mean = price_mean, sd = price_sd)
+print(quantile_value)
+```
+```{r}
+# Calculate the probability that a value is between -1 and 1
+prob_between <- pnorm(1, mean = price_mean, sd = price_sd) - pnorm(-1, mean = price_mean, sd = price_sd)
+print(prob_between)
+```
+```{r}
+# Plot the normal distribution with mean = 5 and sd = 2
+y <- dnorm(price, mean = 5, sd = 2)
+plot(price, y, type = "p", main = "Normal Distribution (mean = 5, sd = 2)", xlab = "x", ylab = "Density")
+```
+```{r}
+#install.packages("nortest")
+library(nortest)
+ad.test(price)
+```
+```{r}
+# Q-Q plot for a normal distribution
+qqnorm(price)
+qqline(price, col = "red")
+```
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

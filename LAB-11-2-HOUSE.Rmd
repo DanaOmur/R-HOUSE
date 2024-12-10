@@ -1,0 +1,111 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+# 1. Generating Random Numbers from a Binomial Distribution
+
+# Generate 100 random numbers from a binomial distribution
+# 10 trials, probability of success = 0.5
+random_numbers <- rbinom(200, size = 30, prob = 0.75)
+
+# Display the first few random numbers
+head(random_numbers)
+```
+
+```{r}
+# 2. Plotting the Binomial Distribution
+# Define parameters
+size <- 10
+prob <- 0.5
+
+# Generate values for the x-axis (number of successes)
+x <- 0:size
+
+# Calculate the probability mass function (PMF)
+y <- dbinom(x, size = size, prob = prob)
+
+# Create the plot
+barplot(y, names.arg = x, col = "skyblue", main = "Binomial Distribution (n=10, p=0.5)",
+        xlab = "Number of Successes", ylab = "Probability")
+```
+
+```{r}  
+# 3. Calculating Probability Mass Function (PMF)
+# Calculate the probability of getting exactly 3 successes
+prob_3_successes <- dbinom(3, size = 10, prob = 0.5)
+cat("P(X = 3):", prob_3_successes, "\n")
+```
+
+```{r}
+# 4. Calculating Cumulative Probability
+# Calculate cumulative probability for 3 or fewer successes
+cumulative_prob_3 <- pbinom(3, size = 10, prob = 0.5)
+cat("P(X ≤ 3):", cumulative_prob_3, "\n")
+```
+
+```{r}
+# 5. Inverse Cumulative Probability (Quantile Function)
+# Calculate the quantile corresponding to cumulative probability 0.95
+quantile_value <- qbinom(0.95, size = 10, prob = 0.5)
+cat("The number of successes at the 95th percentile:", quantile_value, "\n")
+```
+
+```{r}
+# 6. Two-Sample Proportion Test (Binomial Test)
+# Perform a binomial test to check if the proportion is different from 0.5
+binom_test <- binom.test(55, 100, p = 0.5)
+
+# Output results
+print(binom_test)
+```
+
+```{r}
+# 7. Calculating Expected Value and Variance
+# Define parameters
+n <- 10   # Number of trials
+p <- 0.5  # Probability of success
+
+# Calculate expected value and variance
+expected_value <- n * p
+variance <- n * p * (1 - p)
+
+cat("Expected Value:", expected_value, "\n")
+
+cat("Variance:", variance, "\n")
+```
+
+```{r}
+# 8. Binomial Distribution for Different Parameters
+# Define parameters
+size <- 20
+prob <- 0.7
+
+# Generate values for the x-axis (number of successes)
+x <- 0:size
+
+# Calculate the PMF
+y <- dbinom(x, size = size, prob = prob)
+
+# Create the plot
+barplot(y, names.arg = x, col = "lightgreen", main = "Binomial Distribution (n=20, p=0.7)",
+        xlab = "Number of Successes", ylab = "Probability")
+```
+
+```{r}
+# 9. Power Analysis for a Binomial Test
+# install.packages("pwr")
+library(pwr)
+power_analysis <- pwr.p.test(h = ES.h(p1 = 0.75, p2 = 0.50),
+           sig.level = 0.01,
+           power = 0.80,
+           alternative = "greater")
+print(power_analysis)
+plot(power_analysis)
+power_analysis <- pwr.p.test(h = ES.h(p1 = 0.75, p2 = 0.50),
+           sig.level = 0.005,
+           n = 100,
+           alternative = "greater")
+print(power_analysis)
+plot(power_analysis)
+```

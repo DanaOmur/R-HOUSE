@@ -1,0 +1,113 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+```{r}
+library(caret)
+library(dplyr)
+```
+
+```{r}
+train <- read.csv('train9-1_HOUSE.csv')
+test <- read.csv('test9-1_HOUSE.csv')
+```
+```{r}
+unique(train$saleEstimate_confidenceLevel)
+```
+```{r}
+mode_value <- names(sort(table(train$saleEstimate_confidenceLevel), decreasing = TRUE))[1]
+
+train$saleEstimate_confidenceLevel[train$saleEstimate_confidenceLevel == ""] <- mode_value
+
+unique(train$saleEstimate_confidenceLevel)
+
+```
+
+```{r}
+mode_value <- names(sort(table(test$saleEstimate_confidenceLevel), decreasing = TRUE))[1]
+
+test$saleEstimate_confidenceLevel[test$saleEstimate_confidenceLevel == ""] <- mode_value
+
+unique(test$saleEstimate_confidenceLevel)
+```
+
+
+
+
+```{r}
+sum(is.na(train))
+sum(is.na(test))
+```
+```{r}
+# Convert columns to Date and Datetime
+train$saleEstimate_ingestedAt <- as.POSIXct(train$saleEstimate_ingestedAt, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
+train$saleEstimate_valueChange.saleDate <- as.Date(train$saleEstimate_valueChange.saleDate, format = "%Y-%m-%d")
+train$history_date <- as.Date(train$history_date, format = "%Y-%m-%d")
+```
+```{r}
+test$saleEstimate_ingestedAt <- as.POSIXct(test$saleEstimate_ingestedAt, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
+test$saleEstimate_valueChange.saleDate <- as.Date(test$saleEstimate_valueChange.saleDate, format = "%Y-%m-%d")
+test$history_date <- as.Date(test$history_date, format = "%Y-%m-%d")
+```
+
+```{r}
+train$saleEstimate_confidenceLevel <- factor(train$saleEstimate_confidenceLevel)
+```
+```{r}
+test$saleEstimate_confidenceLevel <- factor(test$saleEstimate_confidenceLevel, levels = levels(train$saleEstimate_confidenceLevel))
+```
+```{r}
+train$saleEstimate_confidenceLevel <- as.integer(train$saleEstimate_confidenceLevel)
+test$saleEstimate_confidenceLevel <- as.integer(test$saleEstimate_confidenceLevel)
+```
+```{r}
+print(head(train$saleEstimate_confidenceLevel))
+```
+```{r}
+head(test$saleEstimate_confidenceLevel)
+```
+```{r}
+dt_tr <- train %>% select(saleEstimate_ingestedAt, saleEstimate_valueChange.saleDate, history_date)
+dt_tt <- test %>% select(saleEstimate_ingestedAt, saleEstimate_valueChange.saleDate, history_date)
+train <- train %>% select(-saleEstimate_ingestedAt, -saleEstimate_valueChange.saleDate, -history_date)
+test <- test %>% select(-saleEstimate_ingestedAt, -saleEstimate_valueChange.saleDate, -history_date)
+```
+```{r}
+dummies_train <- dummyVars(~ ., data = train)
+train_encoded <- predict(dummies_train, newdata = train)
+train_encoded <- data.frame(train_encoded)
+```
+
+
+```{r}
+test_encoded <- predict(dummies_train, newdata = test)
+test_encoded <- data.frame(test_encoded)
+```
+```{r}
+train_enc <- cbind(train_encoded, dt_tr)
+test_enc <- cbind(test_encoded, dt_tt)
+```
+
+
+```{r}
+write.csv(train_enc, file = 'train_encoded.csv')
+write.csv(test_enc, file = 'test_encoded.csv')
+```
+
+
+
+
+
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

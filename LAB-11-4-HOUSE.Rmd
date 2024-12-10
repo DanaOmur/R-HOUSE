@@ -1,0 +1,218 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+df <- read.csv('test_encoded.csv')
+#will use 2 columns, the one with date(valueChange.saleDate one and current price)
+```
+```{r}
+df2 <- df[, c('saleEstimate_valueChange.saleDate', 'history_price')]
+typeof(df2)
+```
+
+```{r}
+df2 = df2 %>% group_by(saleEstimate_valueChange.saleDate)  %>%
+                    summarise(history_price = sum(history_price),
+                              .groups = 'drop')
+class(df2)
+```
+```{r}
+df2 <- as.data.frame(df2)
+class(df2)
+```
+```{r}
+df2$saleEstimate_valueChange.saleDate = as.POSIXct(df2$saleEstimate_valueChange.saleDate, format="%Y-%m-%d", tz="UTC")
+
+df2
+```
+```{r}
+df2 <- na.omit(df2)
+```
+
+```{r}
+rownames(df2) <- df2$saleEstimate_valueChange.saleDate
+```
+```{r}
+df3 <- df2[, 2] 
+df3
+```
+```{r}
+sum(is.na(df3))
+```
+```{r}
+library(lubridate)
+
+ts_data <- ts(df3, frequency = 365)
+print(ts_data)
+```
+```{r}
+plot(ts_data, main = "Daily Data from 1995", ylab = "Values", xlab = "Time")
+```
+```{r}
+# Decompose the time series
+decomposed_ts <- decompose(ts_data)
+
+# Plot the decomposition components
+plot(decomposed_ts)
+```
+```{r}
+# STL decomposition
+stl_decomposed <- stl(ts_data, s.window = "periodic")
+plot(stl_decomposed)
+```
+```{r}
+# ACF and PACF plots
+acf(ts_data)  # Autocorrelation function
+```
+```{r}
+pacf(ts_data)  # Partial autocorrelation function
+```
+```{r}
+# Install and load the tseries package
+# install.packages("tseries")
+library(tseries)
+
+# Augmented Dickey-Fuller test for stationarity
+adf_test_result <- adf.test(ts_data)
+```
+```{r}
+print(adf_test_result)
+```
+```{r}
+# First difference to remove trend
+diff_data <- diff(ts_data)
+
+# Plot the differenced data
+
+plot(diff_data)
+```
+```{r}
+# Seasonal difference (use frequency of the series)
+seasonal_diff_data <- diff(ts_data, lag = 365)
+
+# Plot the seasonal differenced data
+plot(seasonal_diff_data)
+```
+```{r}
+# Install and load the forecast package
+# install.packages("forecast")
+library(forecast)
+
+# Fit an ARIMA model
+arima_model <- auto.arima(ts_data)
+
+# Display the ARIMA model
+summary(arima_model)
+```
+```{r}
+# Forecast the next 12 months
+forecasted_values <- forecast(arima_model, h = 365)
+
+# Plot the forecasted values
+plot(forecasted_values)
+```
+```{r}
+#Afit = auto.arima(ts_data3, trace=TRUE)
+checkresiduals(arima_model)
+```
+```{r}
+#Afit = auto.arima(ts_data, trace=TRUE)
+#checkresiduals(Afit)
+#Aforecast = forecast(Afit)
+#accuracy(Aforecast)
+#Aforecast
+plot(forecasted_values, sub = "Simple plot to forecast")
+```
+```{r}
+#Model 2 using HoltWinters
+
+Hfit = HoltWinters(ts_data ,beta=TRUE, gamma=TRUE)
+Hfit$fitted
+```
+```{r}
+checkresiduals(Hfit)
+```
+```{r}
+Hforecast = forecast(Hfit, h=8)
+accuracy(Hforecast)
+```
+```{r}
+#Model 2 using HoltWinters
+
+#Hfit = HoltWinters(ts_data ,beta=TRUE, gamma=TRUE)
+#Hfit$fitted
+#checkresiduals(Hfit)
+#Hforecast = forecast(Hfit, h=8)
+#accuracy(Hforecast)
+#Hforecast
+plot(Hforecast)
+```
+```{r}
+# Fit an ETS model
+ets_model <- ets(ts_data)
+```
+```{r}
+# Display the ETS model
+summary(ets_model)
+```
+```{r}
+# Forecast the next 12 months
+ets_forecast <- forecast(ets_model, h = 365)
+
+# Plot the forecasted values
+plot(ets_forecast)
+```
+```{r}
+# Cross-validation with rolling origin (train-test split) using the forecast package
+# For example, the first 80% of data is used for training, and the last 20% for testing
+train_size <- floor(0.8 * length(ts_data))
+train_data <- ts_data[1:train_size]
+test_data <- ts_data[(train_size + 1):length(ts_data)]
+
+# Fit ARIMA model on the training data
+arima_model_cv <- auto.arima(train_data)
+
+# Forecast on the test data
+forecast_cv <- forecast(arima_model_cv, h = length(test_data))
+
+# Plot the forecast vs actual values
+plot(forecast_cv)
+lines(test_data, col = "red")
+```
+```{r}
+#Validation of the models
+
+accuracy (forecasted_values)
+```
+```{r}
+accuracy (Hforecast)
+```
+```{r}
+accuracy(ets_forecast)
+```
+```{r}
+accuracy(arima_model_cv)
+```
+
+
+
+
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

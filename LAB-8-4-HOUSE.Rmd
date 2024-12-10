@@ -1,0 +1,86 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+#Load necessary packages
+library(ggplot2)
+library(dplyr)
+```
+```{r}
+# Allow the user to choose a file interactively
+file_path <- file.choose()
+
+# Read the CSV file into a data frame
+data <- read.csv(file_path)
+rm(file_path)
+```
+```{r}
+sample_data<- data%>% filter(history_price <25000000)
+```
+```{r}
+g <- ggplot(sample_data, aes(x = rentEstimate_currentPrice,
+                             y = history_price))
+g <- g + geom_point()
+#g <- g + geom_smooth(method = "lm", se = F)
+g <- g + geom_line(aes(y = history_price_capped), col = "red", size = 0.05)
+g 
+```
+```{r}
+model_lin <- lm(data = sample_data, 
+                formula = history_price ~ rentEstimate_currentPrice)
+summary(model_lin)
+```
+```{r}
+model_quad <- lm(data = sample_data, 
+            formula = history_price ~ rentEstimate_currentPrice + I(rentEstimate_currentPrice^2))
+summary(model_quad)
+```
+```{r}
+model_pol <- lm(data = sample_data, 
+            formula = history_price ~ rentEstimate_currentPrice + I(rentEstimate_currentPrice^2) + I(rentEstimate_currentPrice^3))
+```
+```{r}
+model_poly <- lm(data = sample_data, 
+            formula = history_price ~ poly(rentEstimate_currentPrice, 5))
+```
+```{r}
+summary(model_poly)
+```
+```{r}
+model_fit_values <- fitted(model_poly)
+model_residuals <- residuals(model_poly)
+plot(model_fit_values, model_residuals)
+```
+```{r}
+sample_data$price_predout <- predict(object = model_pol, 
+                          newdata = sample_data)
+sample_data$price_pred <- predict(object = model_poly, 
+                          newdata = sample_data)
+```
+```{r}
+g <- ggplot(sample_data, aes(rentEstimate_currentPrice, price_pred))
+g <- g +geom_point(aes(y = history_price))
+g <- g + geom_line(col = "green", size = 2)
+g <- g + geom_line(data = sample_data, aes(rentEstimate_currentPrice, price_predout), col = "red")
+g
+```
+```{r}
+model_summary <- summary(model_poly)
+model_summary$adj.r.squared
+```
+
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

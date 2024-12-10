@@ -1,0 +1,63 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+install.packages('rpart.plot')
+install.packages('rpart')
+```
+
+```{r}
+#regression
+library(rpart)
+library(rpart.plot)
+library(dplyr)
+```
+```{r}
+df <- read.csv('test_encoded.csv')
+```
+```{r}
+names(df)
+```
+```{r}
+df <- df %>% select(-X, -X.1, -saleEstimate_ingestedAt, -saleEstimate_valueChange.saleDate, -history_date)
+```
+
+
+
+```{r}
+# Build the regression tree
+tree_model_regression <- rpart(saleEstimate_currentPrice ~ ., 
+                               data = df, method = "anova")
+```
+
+
+```{r}
+# View the summary of the tree model
+summary(tree_model_regression)
+# Plot the regression tree
+rpart.plot(tree_model_regression)
+# Make predictions using the regression model
+predictions <- predict(tree_model_regression, df)
+```
+
+
+```{r}
+# View the first few predictions
+head(predictions)
+# Calculate residuals
+residuals <- df$saleEstimate_currentPrice - predictions
+```
+
+
+```{r}
+# Calculate Mean Squared Error (MSE)
+mse <- mean(residuals^2)
+cat("Mean Squared Error (MSE):", mse, "\n")
+# Calculate R-squared
+sst <- sum((df$saleEstimate_currentPrice - mean(df$saleEstimate_currentPrice))^2)
+sse <- sum(residuals^2)
+r_squared <- 1 - sse / sst
+cat("R-squared:", r_squared, "\n")
+```
+

@@ -1,0 +1,89 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+#Load necessary packages
+library(ggplot2)
+library(dplyr)
+```
+```{r}
+# Allow the user to choose a file interactively
+file_path <- file.choose()
+
+# Read the CSV file into a data frame
+data <- read.csv(file_path)
+```
+```{r}
+plot_rent_sale <- function(df) {
+  g <- ggplot(df, aes(x = rentEstimate_currentPrice, y = history_price))
+  g <- g + geom_point()
+  g <- g + geom_smooth(method="lm", se=F)
+  g
+}
+```
+```{r}
+plot_rent_sale(data)
+```
+```{r}
+data %>% filter(history_price > 50000000)
+```
+```{r}
+data_filt <- data %>% filter(history_price < 30000000)
+plot_rent_sale(data_filt)
+```
+```{r}
+# Create the linear regression model
+model <- lm(data = data_filt, formula = history_price~rentEstimate_currentPrice)
+model_summary <- model %>% 
+  summary()
+model_summary
+```
+```{r}
+model_summary$r.squared
+```
+```{r}
+# Step 1: Predict hprice_pred
+data_filt$hprice_pred <- predict(object = model, 
+                                 newdata = data_filt)
+```
+```{r}
+# Step 2: Plot rentEstimate_currentPrice vs hprice_pred
+g <- plot_rent_sale(data_filt)
+g <- g + geom_point(data = data_filt, 
+                    aes(x = rentEstimate_currentPrice, 
+                        y = hprice_pred),
+                    col = "red", alpha = .3)
+g
+```
+```{r}
+# Step 3: Plot history_price vs hprice_pred
+g <- ggplot(data = data_filt,
+            aes(x = history_price,
+                y = hprice_pred))
+g <- g + geom_point()
+g <- g + geom_abline(slope = 1, 
+                     intercept = 0,
+                     col = "blue")
+g <- g + labs(x = "History Price",
+              y = "Predicted Price",
+              title = "Price Correlation")
+g
+
+```
+
+
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
