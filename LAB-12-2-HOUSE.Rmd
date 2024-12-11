@@ -60,4 +60,3 @@ sse <- sum(residuals^2)
 r_squared <- 1 - sse / sst
 cat("R-squared:", r_squared, "\n")
 ```
-
